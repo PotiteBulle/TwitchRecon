@@ -1,4 +1,4 @@
-# TwitchRecon System Depéndances
+# TwitchRecon System Dépendances
 import os
 import json
 import time
@@ -6,26 +6,26 @@ import requests
 from dotenv import load_dotenv
 from datetime import datetime
 
-# Chargement de la configuration .env
+# Chargement de la configuration depuis le fichier .env
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
-# Dossiers et fichiers
+# Définition des chemins des dossiers et fichiers
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SUSPECTS_DIR = os.path.join(BASE_DIR, "suspects")
 LOG_FILE = os.path.join(BASE_DIR, "twitchrecon.log")
 PATTERN_FILE = os.path.join(BASE_DIR, "patterns.json")
 OUTPUT_FILE = os.path.join(SUSPECTS_DIR, "suspects.json")
 
-# Création du dossier suspects s'il n'existe pas
+# Création du dossier suspects s'il n'existe pas déjà
 os.makedirs(SUSPECTS_DIR, exist_ok=True)
 
 # URLs de l'API Twitch
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 USERS_URL = "https://api.twitch.tv/helix/users"
 
-# Logger simplifié
+# Logger : écrit les logs dans le terminal et dans un fichier
 def log(message):
     timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     full_message = f"[{timestamp}] {message}"
@@ -33,12 +33,12 @@ def log(message):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(full_message + "\n")
 
-# Chargement des patterns (préfixes/suffixes)
+# Chargement des patterns (préfixes, suffixes, mots-clés sensibles)
 def load_patterns():
     with open(PATTERN_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-# Récupération du token OAuth Twitch
+# Obtention d'un token d'accès OAuth depuis l'API Twitch
 def get_access_token():
     response = requests.post(TOKEN_URL, params={
         "client_id": CLIENT_ID,
@@ -48,7 +48,7 @@ def get_access_token():
     response.raise_for_status()
     return response.json()["access_token"]
 
-# Génération de pseudos à partir des patterns
+# Génération des pseudos à tester selon les patterns
 def generate_usernames(prefixes, suffixes, max_suffix_variants=50):
     usernames = set()
     for prefix in prefixes:
@@ -61,7 +61,7 @@ def generate_usernames(prefixes, suffixes, max_suffix_variants=50):
                 usernames.add(f"{prefix}{suffix}{i}")
     return list(usernames)
 
-# Vérifie l'existence d'un pseudo Twitch
+# Vérifie si un pseudo Twitch existe via l'API
 def check_username_exists(username, token):
     response = requests.get(USERS_URL, headers={
         "Client-ID": CLIENT_ID,
@@ -77,34 +77,44 @@ def check_username_exists(username, token):
         }
     return None
 
-# Chargement des suspects déjà connus
+# Chargement des utilisateurices déjà enregistrés dans suspects.json
 def load_existing_users():
     if os.path.exists(OUTPUT_FILE):
         with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     return []
 
-# Sauvegarde des suspects
+# Sauvegarde des utilisateurices détectés
 def save_users(users):
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(users, f, indent=2)
 
-# Main
+# Vérifie si le pseudo contient un mot-clé sensible (peu importe sa position)
+def contains_sensitive_keyword(username, keywords):
+    lower_username = username.lower()
+    return any(keyword.lower() in lower_username for keyword in keywords)
+
+# Fonction principale de surveillance continue
 if __name__ == "__main__":
     log("--- Lancement de TwitchRecon (mode continu) ---")
-    
+
     while True:
         try:
+            # Authentification
             token = get_access_token()
+            # Chargement des règles de détection
             patterns = load_patterns()
 
             prefixes = patterns.get("prefixes", [])
             suffixes = patterns.get("sensitive_suffixes", [])
+            keywords = patterns.get("contains_keywords", [])
             usernames = generate_usernames(prefixes, suffixes)
 
+            # Chargement des utilisateurs déjà connus
             known_users = load_existing_users()
             known_usernames = {u["username"] for u in known_users}
 
+            # Boucle sur tous les pseudos générés
             for username in usernames:
                 if username in known_usernames:
                     log(f"[SKIP] {username} déjà connu")
@@ -112,7 +122,11 @@ if __name__ == "__main__":
 
                 user_data = check_username_exists(username, token)
                 if user_data:
-                    log(f"[FOUND] {username} ajouté")
+                    if contains_sensitive_keyword(username, keywords):
+                        log(f"[FLAGGED] {username} contient un mot-clé sensible")
+                    else:
+                        log(f"[FOUND] {username} ajouté")
+
                     known_users.append(user_data)
                     save_users(known_users)
                 else:
@@ -121,8 +135,8 @@ if __name__ == "__main__":
                 time.sleep(1)
 
             log("Nouveau cycle de scan terminé. Attente avant relance...")
-            time.sleep(300)  # pause de 5 minutes entre chaque boucle
+            time.sleep(300)  # Pause de 5 minutes entre chaque boucle
 
         except Exception as e:
             log(f"[ERREUR] {str(e)}")
-            time.sleep(60)  # pause d'1 min avant reprise en cas d'erreur
+            time.sleep(60)  # Pause d'1 min en cas d'erreur
