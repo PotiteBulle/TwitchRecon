@@ -1,15 +1,31 @@
 {
-    "prefixes": [
-      "tuheur2",
-      "exterminateur2",
-      "chasseur2",
-      "pourfendeur2"
-    ],
-    "sensitive_suffixes": [
-      "gazaoui",
-      "palestinian",
-      "intifada",
-      "hamasfree"
-    ]
-  }
-  
+  "prefixes": [
+    "tuheur2",
+    "exterminateur2",
+    "chasseur2",
+    "pourfendeur2",
+    "tondeur2",
+    "aracheur2",
+    "tueur2",
+    "defourailleur2",
+    "dezingeur2",
+    "viauleur2",
+    "desintegration2"
+  ],
+  "sensitive_suffixes": [
+    "gazaoui",
+    "palestinian",
+    "palestinien",
+    "palestine",
+    "hamasfree",
+    "intifada"
+  ],
+  "contains_keywords": [
+    "palestine",
+    "palestinien",
+    "palestinian",
+    "gaza",
+    "intifada",
+    "hamas"
+  ]
+}
