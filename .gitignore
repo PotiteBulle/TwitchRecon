@@ -1,0 +1,18 @@
+# Fichiers sensibles
+.env
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# IDE / éditeurs
+.vscode/
+.idea/
+
+# Environnement virtuel
+venv/
+.env/
+.env.bak/
+.venv/
