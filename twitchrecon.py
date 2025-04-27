@@ -3,6 +3,7 @@ import os
 import json
 import time
 import requests
+import re
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -17,7 +18,6 @@ SUSPECTS_DIR = os.path.join(BASE_DIR, "suspects")
 LOG_FILE = os.path.join(BASE_DIR, "twitchrecon.log")
 PATTERN_FILE = os.path.join(BASE_DIR, "patterns.json")
 OUTPUT_FILE = os.path.join(SUSPECTS_DIR, "suspects.json")
-
 # Création du dossier suspects s'il n'existe pas déjà
 os.makedirs(SUSPECTS_DIR, exist_ok=True)
 
@@ -26,6 +26,7 @@ TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 USERS_URL = "https://api.twitch.tv/helix/users"
 
 # Logger : écrit les logs dans le terminal et dans un fichier
+
 def log(message):
     timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     full_message = f"[{timestamp}] {message}"
@@ -48,6 +49,15 @@ def load_json_file(filepath, default=None):
     return default
 
 # Obtention d'un token d'accès OAuth depuis l'API Twitch
+
+def is_valid_username(username):
+    if len(username) > 25:
+        return False
+    if not re.match(r'^[a-zA-Z0-9_]+$', username):
+        return False
+    return True
+
+# Récupération du token Twitch
 
 def get_access_token():
     try:
@@ -78,6 +88,7 @@ def generate_usernames(prefixes, suffixes, separators, max_variants=50):
     return sorted(usernames)
 
 # Vérifie si un pseudo Twitch existe via l'API
+
 def check_username_exists(username, token):
     try:
         response = requests.get(USERS_URL, headers={
@@ -106,6 +117,7 @@ def check_username_exists(username, token):
     return None
 
 # Chargement des utilisateurices déjà enregistrés dans suspects.json
+
 def contains_sensitive_keyword(username, keywords):
     lower_username = username.lower()
     return any(keyword.lower() in lower_username for keyword in keywords)
@@ -137,6 +149,10 @@ if __name__ == "__main__":
                 if username in known_usernames:
                     continue
 
+                if not is_valid_username(username):
+                    log(f"[INVALID] {username} non conforme, ignoré")
+                    continue
+
                 user_data = check_username_exists(username, token)
                 if user_data:
                     if contains_sensitive_keyword(username, keywords):
@@ -158,3 +174,4 @@ if __name__ == "__main__":
         except Exception as e:
             log(f"[ERREUR GENERALE] {e}")
             time.sleep(60)
+
