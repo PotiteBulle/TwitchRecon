@@ -10,22 +10,51 @@
     "defourailleur2",
     "dezingeur2",
     "viauleur2",
-    "desintegration2"
+    "desintegration2",
+    "vendeur2"
   ],
   "sensitive_suffixes": [
     "gazaoui",
+    "gaz4oui",
     "palestinian",
     "palestinien",
+    "p4lestinian",
+    "p4lestinien",
     "palestine",
+    "p4lestine",
     "hamasfree",
-    "intifada"
+    "h4masfree",
+    "intifada",
+    "int1fada",
+    "naighre",
+    "n4ighre"
   ],
   "contains_keywords": [
-    "palestine",
-    "palestinien",
-    "palestinian",
     "gaza",
+    "gaz4",
+    "palestine",
+    "p4lestine",
+    "palestinien",
+    "p4lestinien",
+    "palestinian",
+    "p4lestinian",
     "intifada",
-    "hamas"
+    "int1fada",
+    "hamas",
+    "h4mas",
+    "naighre",
+    "n4ighre",
+    "neigre",
+    "n3igre",
+    "nigrou",
+    "n1grou",
+    "negroe",
+    "n3groe"
+  ],
+  "separators": [
+    "",
+    "_",
+    ".",
+    "-"
   ]
 }
