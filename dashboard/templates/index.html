@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="../static/icon.png" type="image/x-icon">
+    <link rel="stylesheet" href="../static/style.css">
+    <title>TwitchRecon</title>
+</head>
+
+<body>
+    <h1>TwitchRecon Dashboard - Comptes Trouvés</h1>
+    <!-- Tableau pour afficher les comptes détectés -->
+    <table id="accountsTable">
+        <thead>
+            <tr>
+                <th>Login</th>
+                <th>Display Name</th>
+                <th>ID</th>
+                <th>Détecté à</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Les lignes seront injectées dynamiquement par JavaScript -->
+        </tbody>
+    </table>
+    <script>
+        // Fonction asynchrone pour récupérer les comptes depuis l'API
+        async function fetchAccounts() {
+            // Requête GET vers /api/accounts
+            const response = await fetch("/api/accounts");
+            const accounts = await response.json(); // Convertir la réponse en JSON
+
+            const tbody = document.querySelector("#accountsTable tbody");
+            tbody.innerHTML = ""; // Nettoyer le tableau avant d'ajouter les nouvelles données
+
+            // Parcourir chaque utilisateur et créer une ligne dans le tableau
+            accounts.forEach(user => {
+                const row = `<tr>
+                <td>${user.username}</td>
+                <td>${user.display_name}</td>
+                <td>${user.id}</td>
+                <td>${user.checked_at}</td>
+            </tr>`;
+                tbody.innerHTML += row; // Ajouter la ligne au tableau
+            });
+        }
+
+        // Appel initial pour afficher les comptes dès le chargement de la page
+        fetchAccounts();
+
+        // Rafraîchissement automatique toutes les 30 secondes
+        setInterval(fetchAccounts, 30000);
+    </script>
+</body>
+
+</html>
