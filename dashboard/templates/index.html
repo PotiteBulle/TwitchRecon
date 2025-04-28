@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="../static/icon.png" type="image/x-icon">
-    <link rel="stylesheet" href="../static/style.css">
+    <link rel="shortcut icon" href="/static/icon.png" type="image/x-icon">
+    <link rel="stylesheet" href="/static/style.css">
     <title>TwitchRecon</title>
 </head>
 
 <body>
     <h1>TwitchRecon Dashboard - Comptes Trouvés</h1>
+
     <!-- Tableau pour afficher les comptes détectés -->
     <table id="accountsTable">
         <thead>
@@ -24,6 +25,7 @@
             <!-- Les lignes seront injectées dynamiquement par JavaScript -->
         </tbody>
     </table>
+
     <script>
         // Fonction asynchrone pour récupérer les comptes depuis l'API
         async function fetchAccounts() {
@@ -37,11 +39,11 @@
             // Parcourir chaque utilisateur et créer une ligne dans le tableau
             accounts.forEach(user => {
                 const row = `<tr>
-                <td>${user.username}</td>
-                <td>${user.display_name}</td>
-                <td>${user.id}</td>
-                <td>${user.checked_at}</td>
-            </tr>`;
+                    <td>${user.username}</td>
+                    <td>${user.display_name}</td>
+                    <td>${user.id}</td>
+                    <td>${user.checked_at}</td>
+                </tr>`;
                 tbody.innerHTML += row; // Ajouter la ligne au tableau
             });
         }
@@ -53,5 +55,4 @@
         setInterval(fetchAccounts, 30000);
     </script>
 </body>
-
 </html>
