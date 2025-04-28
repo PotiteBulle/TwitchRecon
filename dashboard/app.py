@@ -10,8 +10,8 @@ SUSPECTS_FILE = os.path.join(BASE_DIR, "..", "suspects", "suspects.json")
 def index():
     return render_template("index.html")
 
-@app.route("/api/suspects")
-def api_suspects():
+@app.route("/api/accounts")
+def api_accounts():  # Renommé ici
     if os.path.exists(SUSPECTS_FILE):
         with open(SUSPECTS_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -20,4 +20,4 @@ def api_suspects():
     return jsonify(data)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True) # Change host 
+    app.run(host="0.0.0.0", port=8080, debug=True)  # Change host // port
