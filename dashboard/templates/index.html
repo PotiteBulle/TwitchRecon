@@ -11,12 +11,18 @@
 <body>
     <h1>TwitchRecon Dashboard - Comptes Trouvés</h1>
 
+    <!-- Stats -->
+    <div id="stats" style="text-align: center; margin-bottom: 20px;">
+        <p id="totalCount">Total Comptes : 0</p>
+        <p id="suspectCount">Comptes Suspects : 0</p>
+    </div>
+
     <!-- Tableau pour afficher les comptes détectés -->
     <table id="accountsTable">
         <thead>
             <tr>
-                <th>Login</th>
-                <th>Display Name</th>
+                <th>Pseudo</th>
+                <th>Confirmation</th>
                 <th>ID</th>
                 <th>Détecté à</th>
             </tr>
@@ -27,31 +33,71 @@
     </table>
 
     <script>
-        // Fonction asynchrone pour récupérer les comptes depuis l'API
+        // Fonction pour récupérer les comptes depuis l'API
         async function fetchAccounts() {
-            // Requête GET vers /api/accounts
             const response = await fetch("/api/accounts");
-            const accounts = await response.json(); // Convertir la réponse en JSON
+            const accounts = await response.json();
 
             const tbody = document.querySelector("#accountsTable tbody");
-            tbody.innerHTML = ""; // Nettoyer le tableau avant d'ajouter les nouvelles données
+            const totalCount = document.getElementById("totalCount");
+            const suspectCount = document.getElementById("suspectCount");
 
-            // Parcourir chaque utilisateur et créer une ligne dans le tableau
+            tbody.innerHTML = "";
+            let total = 0;
+            let suspects = 0;
+
+            // Définir les préfixes et suffixes sensibles
+            const prefixes = [
+                "tuheur2", "exterminateur2", "chasseur2", "pourfendeur2", "tondeur2",
+                "aracheur2", "tueur2", "defourailleur2", "dezingeur2", "viauleur2",
+                "desintegration2", "vendeur2", "massacreur2"
+            ];
+
+            const sensitiveSuffixes = [
+                "gazaoui", "gaz4oui", "palestinian", "palestinien", "p4lestinian", "p4lestinien",
+                "palestine", "p4lestine", "hamasfree", "h4masfree", "intifada", "int1fada",
+                "naighre", "n4ighre"
+            ];
+
             accounts.forEach(user => {
-                const row = `<tr>
-                    <td>${user.username}</td>
+                total++;
+                const lowerUsername = user.username.toLowerCase();
+                let isSuspicious = false;
+
+                // Vérifier si un prefix + suffix match
+                prefixes.forEach(prefix => {
+                    sensitiveSuffixes.forEach(suffix => {
+                        if (lowerUsername.includes(prefix + suffix)) {
+                            isSuspicious = true;
+                        }
+                    });
+                });
+
+                const row = document.createElement("tr");
+
+                if (isSuspicious) {
+                    row.style.backgroundColor = "#ffd1d1"; // Fond rosé clair
+                    suspects++;
+                }
+
+                row.innerHTML = `
+                    <td>${isSuspicious ? "⚠️ " : ""}${user.username}</td>
                     <td>${user.display_name}</td>
                     <td>${user.id}</td>
                     <td>${user.checked_at}</td>
-                </tr>`;
-                tbody.innerHTML += row; // Ajouter la ligne au tableau
+                `;
+
+                tbody.appendChild(row);
             });
+
+            // Mise à jour des compteurs en haut
+            totalCount.textContent = `Total Comptes : ${total}`;
+            suspectCount.textContent = `Comptes Suspects : ${suspects}`;
         }
 
-        // Appel initial pour afficher les comptes dès le chargement de la page
+        // Appel initial
         fetchAccounts();
-
-        // Rafraîchissement automatique toutes les 30 secondes
+        // Rafraîchissement toutes les 30 secondes
         setInterval(fetchAccounts, 30000);
     </script>
 </body>

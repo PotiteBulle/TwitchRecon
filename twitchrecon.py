@@ -18,6 +18,7 @@ SUSPECTS_DIR = os.path.join(BASE_DIR, "suspects")
 LOG_FILE = os.path.join(BASE_DIR, "twitchrecon.log")
 PATTERN_FILE = os.path.join(BASE_DIR, "patterns.json")
 OUTPUT_FILE = os.path.join(SUSPECTS_DIR, "suspects.json")
+
 # Création du dossier suspects s'il n'existe pas déjà
 os.makedirs(SUSPECTS_DIR, exist_ok=True)
 
@@ -25,8 +26,7 @@ os.makedirs(SUSPECTS_DIR, exist_ok=True)
 TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 USERS_URL = "https://api.twitch.tv/helix/users"
 
-# Logger : écrit les logs dans le terminal et dans un fichier
-
+# Logger
 def log(message):
     timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     full_message = f"[{timestamp}] {message}"
@@ -37,8 +37,7 @@ def log(message):
     except IOError as e:
         print(f"[LOG ERROR] Impossible d'écrire dans le fichier : {e}")
 
-# Chargement de fichiers
-
+# Chargement de JSON
 def load_json_file(filepath, default=None):
     if os.path.exists(filepath):
         try:
@@ -48,8 +47,7 @@ def load_json_file(filepath, default=None):
             log(f"[ERREUR] Chargement du fichier {filepath} : {e}")
     return default
 
-# Obtention d'un token d'accès OAuth depuis l'API Twitch
-
+# Vérification du format username
 def is_valid_username(username):
     if len(username) > 25:
         return False
@@ -57,8 +55,7 @@ def is_valid_username(username):
         return False
     return True
 
-# Récupération du token Twitch
-
+# Récupération du token OAuth Twitch
 def get_access_token():
     try:
         response = requests.post(TOKEN_URL, params={
@@ -72,8 +69,7 @@ def get_access_token():
         log(f"[ERREUR TOKEN] {e}")
         return None
 
-# Génération des pseudos à tester selon les patterns
-
+# Génération des pseudos selon les patterns
 def generate_usernames(prefixes, suffixes, separators, max_variants=50):
     usernames = set()
     for prefix in prefixes:
@@ -87,8 +83,7 @@ def generate_usernames(prefixes, suffixes, separators, max_variants=50):
                     usernames.add(f"{prefix}{sep}{suffix}{i}")
     return sorted(usernames)
 
-# Vérifie si un pseudo Twitch existe via l'API
-
+# Vérifie si un compte existe sur Twitch
 def check_username_exists(username, token):
     try:
         response = requests.get(USERS_URL, headers={
@@ -110,22 +105,24 @@ def check_username_exists(username, token):
                 "username": user["login"],
                 "id": user["id"],
                 "display_name": user["display_name"],
-                "checked_at": datetime.utcnow().isoformat() + "Z"
+                "checked_at": datetime.utcnow().strftime("%d-%m-%Y %H:%M:%S")
             }
     except requests.RequestException as e:
         log(f"[HTTP ERROR] {e}")
     return None
 
-# Chargement des utilisateurices déjà enregistrés dans suspects.json
+# Vérifie si le username correspond à prefix + sensitive suffix
+def is_suspect(username, prefixes, suffixes):
+    username = username.lower()
+    for prefix in prefixes:
+        for suffix in suffixes:
+            if prefix + suffix in username:
+                return True
+    return False
 
-def contains_sensitive_keyword(username, keywords):
-    lower_username = username.lower()
-    return any(keyword.lower() in lower_username for keyword in keywords)
-
-# Vérifie si le pseudo contient un mot-clé sensible (peu importe sa position)
-
+# Main
 if __name__ == "__main__":
-    log("--- Lancement de TwitchRecon (mode continu) ---")
+    log("--- Lancement de TwitchRecon (mode filtré) ---")
 
     while True:
         try:
@@ -144,7 +141,7 @@ if __name__ == "__main__":
             usernames = generate_usernames(prefixes, suffixes, separators)
             known_users = load_json_file(OUTPUT_FILE, default=[])
             known_usernames = {user["username"] for user in known_users}
-# Boucle sur tous les pseudos générés
+
             for username in usernames:
                 if username in known_usernames:
                     continue
@@ -155,23 +152,20 @@ if __name__ == "__main__":
 
                 user_data = check_username_exists(username, token)
                 if user_data:
-                    if contains_sensitive_keyword(username, keywords):
-                        log(f"[FLAGGED] {username} contient un mot-clé sensible")
+                    # Seuls les comptes suspects (prefix+suffix) seront enregistrés
+                    if is_suspect(user_data["username"], prefixes, suffixes):
+                        log(f"[SUSPECT FLAGGED] {user_data['username']} enregistré")
+                        known_users.append(user_data)
+                        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+                            json.dump(known_users, f, indent=2)
                     else:
-                        log(f"[FOUND] {username} ajouté")
-
-                    known_users.append(user_data)
-                    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-                        json.dump(known_users, f, indent=2)
-                else:
-                    log(f"[NOT FOUND] {username}")
+                        log(f"[IGNORED] {user_data['username']} est valide mais non suspect")
 
                 time.sleep(1)
 
-            log("Nouveau cycle de scan terminé. Attente avant relance...")
+            log("Nouveau cycle terminé. Pause avant relance...")
             time.sleep(300)
 
         except Exception as e:
             log(f"[ERREUR GENERALE] {e}")
             time.sleep(60)
-
